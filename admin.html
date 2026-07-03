@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Antrian</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1e3a8a;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.2rem; }
+    header a { color: #93c5fd; font-size: 0.85rem; text-decoration: none; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Kartu statistik */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .stat-card .angka { font-size: 2rem; font-weight: 800; }
+    .stat-card .keterangan { font-size: 0.75rem; color: #6b7280; margin-top: 2px; }
+    .stat-card.menunggu .angka { color: #f59e0b; }
+    .stat-card.dipanggil .angka { color: #3b82f6; }
+    .stat-card.selesai .angka { color: #10b981; }
+    .stat-card.total .angka { color: #1e3a8a; }
+
+    /* Tombol panggil */
+    .panel-panggil {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .info-dipanggil { flex: 1; }
+    .info-dipanggil .label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+    .info-dipanggil .current { font-size: 2.2rem; font-weight: 900; color: #1e40af; }
+    .info-dipanggil .nama-current { font-size: 0.95rem; color: #374151; }
+
+    #btnPanggil {
+      padding: 14px 28px;
+      background: #1e40af;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    #btnPanggil:hover { background: #1e3a8a; }
+    #btnPanggil:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* Tabel antrian */
+    .tabel-wrap {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .tabel-head {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .tabel-head h2 { font-size: 1rem; color: #111827; }
+    .btn-refresh {
+      padding: 6px 14px;
+      background: #f3f4f6;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: #374151;
+    }
+    .btn-refresh:hover { background: #e5e7eb; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #f9fafb;
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 0.78rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid #f9fafb; font-size: 0.88rem; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-menunggu { background: #fef3c7; color: #92400e; }
+    .badge-dipanggil { background: #dbeafe; color: #1e40af; }
+    .badge-selesai { background: #d1fae5; color: #065f46; }
+    .badge-dilewati { background: #f3f4f6; color: #6b7280; }
+
+    .aksi-btn {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    .btn-selesai { background: #d1fae5; color: #065f46; }
+    .btn-selesai:hover { background: #a7f3d0; }
+    .btn-skip { background: #f3f4f6; color: #6b7280; }
+    .btn-skip:hover { background: #e5e7eb; }
+
+    .no-data { text-align: center; color: #9ca3af; padding: 40px; font-size: 0.9rem; }
+
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .panel-panggil { flex-direction: column; align-items: stretch; text-align: center; }
+      #btnPanggil { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚙️ Panel Admin — Antrian</h1>
+  <a href="/">← Ke Halaman Pendaftaran</a>
+</header>
+
+<div class="container">
+
+  <!-- Statistik -->
+  <div class="stats">
+    <div class="stat-card menunggu">
+      <div class="angka" id="stMenunggu">0</div>
+      <div class="keterangan">Menunggu</div>
+    </div>
+    <div class="stat-card dipanggil">
+      <div class="angka" id="stDipanggil">0</div>
+      <div class="keterangan">Dipanggil</div>
+    </div>
+    <div class="stat-card selesai">
+      <div class="angka" id="stSelesai">0</div>
+      <div class="keterangan">Selesai</div>
+    </div>
+    <div class="stat-card total">
+      <div class="angka" id="stTotal">0</div>
+      <div class="keterangan">Total Hari Ini</div>
+    </div>
+  </div>
+
+  <!-- Panel panggil -->
+  <div class="panel-panggil">
+    <div class="info-dipanggil">
+      <div class="label">Sedang Dilayani</div>
+      <div class="current" id="currentNomor">—</div>
+      <div class="nama-current" id="currentNama">Belum ada yang dipanggil</div>
+    </div>
+    <button id="btnPanggil" onclick="panggilBerikutnya()">📢 Panggil Berikutnya</button>
+  </div>
+
+  <!-- Tabel antrian -->
+  <div class="tabel-wrap">
+    <div class="tabel-head">
+      <h2>📋 Daftar Antrian Hari Ini</h2>
+      <button class="btn-refresh" onclick="loadAntrian()">🔄 Refresh</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Nama</th>
+          <th>Keperluan</th>
+          <th>No. HP</th>
+          <th>Daftar</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelBody">
+        <tr><td colspan="7" class="no-data">Memuat data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  let dataAntrian = [];
+
+  function loadAntrian() {
+    fetch("/api/antrian")
+      .then(r => r.json())
+      .then(data => {
+        dataAntrian = data;
+        renderTabel(data);
+        hitungStat(data);
+        updateCurrent(data);
+      })
+      .catch(() => {
+        document.getElementById("tabelBody").innerHTML =
+          '<tr><td colspan="7" class="no-data">Gagal memuat data. Pastikan server berjalan.</td></tr>';
+      });
+  }
+
+  function renderTabel(data) {
+    const tbody = document.getElementById("tabelBody");
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="no-data">Belum ada pendaftar hari ini.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(row => {
+      const badgeClass = {
+        menunggu: "badge-menunggu",
+        dipanggil: "badge-dipanggil",
+        selesai: "badge-selesai",
+        dilewati: "badge-dilewati"
+      }[row.status] || "";
+
+      const bisa_aksi = row.status === "menunggu" || row.status === "dipanggil";
+      const aksi = bisa_aksi ? `
+        <button class="aksi-btn btn-selesai" onclick="tandaiSelesai(${row.id})">✓ Selesai</button>
+        <button class="aksi-btn btn-skip" onclick="lewati(${row.id})">Skip</button>
+      ` : "—";
+
+      return `
+        <tr>
+          <td><strong>${row.nomor_antrian}</strong></td>
+          <td>${row.nama}</td>
+          <td>${row.keperluan}</td>
+          <td>${row.no_hp || "—"}</td>
+          <td>${row.waktu_daftar || "—"}</td>
+          <td><span class="badge ${badgeClass}">${row.status}</span></td>
+          <td>${aksi}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function hitungStat(data) {
+    document.getElementById("stMenunggu").textContent  = data.filter(d => d.status === "menunggu").length;
+    document.getElementById("stDipanggil").textContent = data.filter(d => d.status === "dipanggil").length;
+    document.getElementById("stSelesai").textContent   = data.filter(d => d.status === "selesai").length;
+    document.getElementById("stTotal").textContent     = data.length;
+  }
+
+  function updateCurrent(data) {
+    const dipanggil = data.find(d => d.status === "dipanggil");
+    if (dipanggil) {
+      document.getElementById("currentNomor").textContent = dipanggil.nomor_antrian;
+      document.getElementById("currentNama").textContent = `${dipanggil.nama} — ${dipanggil.keperluan}`;
+    } else {
+      document.getElementById("currentNomor").textContent = "—";
+      document.getElementById("currentNama").textContent = "Belum ada yang dipanggil";
+    }
+  }
+
+  function panggilBerikutnya() {
+    const btn = document.getElementById("btnPanggil");
+    btn.disabled = true;
+
+    fetch("/api/panggil", { method: "POST" })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === "ok") {
+          alert(`📢 Memanggil Nomor ${data.nomor_antrian} — ${data.nama}`);
+          loadAntrian();
+        } else {
+          alert("ℹ️ " + (data.pesan || "Tidak ada antrian menunggu."));
+        }
+      })
+      .catch(() => alert("Gagal terhubung ke server."))
+      .finally(() => { btn.disabled = false; });
+  }
+
+  function tandaiSelesai(id) {
+    if (!confirm("Tandai sebagai selesai?")) return;
+    fetch(`/api/selesai/${id}`, { method: "POST" })
+      .then(() => loadAntrian())
+      .catch(() => alert("Gagal."));
+  }
+
+  function lewati(id) {
+    if (!confirm("Lewati antrian ini?")) return;
+    fetch(`/api/hapus/${id}`, { method: "POST" })
+      .then(() => loadAntrian())
+      .catch(() => alert("Gagal."));
+  }
+
+  // Load awal + auto-refresh tiap 5 detik
+  loadAntrian();
+  setInterval(loadAntrian, 5000);
+</script>
+</body>
+</html>

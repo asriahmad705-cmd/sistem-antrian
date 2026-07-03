@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pendaftaran Antrian</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: #1e40af;
+      color: white;
+      padding: 18px 24px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.5rem; letter-spacing: 1px; }
+    header p { font-size: 0.85rem; opacity: 0.8; margin-top: 4px; }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      padding: 24px 16px;
+    }
+
+    /* Status antrian sedang dipanggil */
+    .status-box {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      border-top: 4px solid #1e40af;
+    }
+    .status-box .label { font-size: 0.8rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+    .status-box .nomor-besar { font-size: 4rem; font-weight: 800; color: #1e40af; line-height: 1; }
+    .status-box .nama-dipanggil { font-size: 1rem; font-weight: 600; color: #111827; margin-top: 4px; }
+    .status-box .menunggu-info { font-size: 0.82rem; color: #6b7280; margin-top: 8px; }
+
+    /* Form */
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1.1rem; color: #111827; margin-bottom: 20px; }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #1e40af; }
+    textarea { resize: vertical; min-height: 80px; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 13px;
+      background: #1e40af;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 6px;
+    }
+    button[type="submit"]:hover { background: #1e3a8a; }
+    button[type="submit"]:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* Modal tiket */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.aktif { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 28px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+      animation: pop 0.25s ease;
+    }
+    @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .modal .ikon { font-size: 3rem; margin-bottom: 10px; }
+    .modal .nomor-tiket { font-size: 5rem; font-weight: 900; color: #1e40af; line-height: 1; }
+    .modal .teks-nomor { font-size: 0.8rem; color: #6b7280; margin-bottom: 4px; }
+    .modal .nama-tiket { font-size: 1.1rem; font-weight: 700; color: #111827; }
+    .modal .keperluan-tiket { font-size: 0.85rem; color: #6b7280; margin-top: 4px; }
+    .modal hr { border: none; border-top: 1.5px dashed #d1d5db; margin: 18px 0; }
+    .modal .pesan { font-size: 0.85rem; color: #374151; }
+
+    .btn-tutup {
+      margin-top: 20px;
+      padding: 10px 28px;
+      background: #1e40af;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .link-admin { text-align: center; margin-top: 20px; font-size: 0.82rem; color: #9ca3af; }
+    .link-admin a { color: #1e40af; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏢 Sistem Antrian</h1>
+  <p>Daftar dan tunggu giliran kamu</p>
+</header>
+
+<div class="container">
+
+  <!-- Status antrian saat ini -->
+  <div class="status-box" id="statusBox">
+    <div class="label">Sedang Dilayani</div>
+    <div class="nomor-besar" id="nomorDipanggil">—</div>
+    <div class="nama-dipanggil" id="namaDipanggil">Belum ada</div>
+    <div class="menunggu-info" id="infoMenunggu">Menunggu: 0 orang</div>
+  </div>
+
+  <!-- Form Pendaftaran -->
+  <div class="card">
+    <h2>📋 Form Pendaftaran</h2>
+
+    <div class="form-group">
+      <label for="nama">Nama Lengkap <span style="color:red">*</span></label>
+      <input type="text" id="nama" placeholder="Masukkan nama lengkap" autocomplete="off" />
+    </div>
+
+    <div class="form-group">
+      <label for="keperluan">Keperluan <span style="color:red">*</span></label>
+      <select id="keperluan">
+        <option value="">— Pilih Keperluan —</option>
+        <option value="Konsultasi Umum">Konsultasi Umum</option>
+        <option value="Pengambilan Dokumen">Pengambilan Dokumen</option>
+        <option value="Pembayaran">Pembayaran</option>
+        <option value="Pengaduan">Pengaduan</option>
+        <option value="Lainnya">Lainnya</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="no_hp">No. HP <span style="color:#9ca3af">(opsional)</span></label>
+      <input type="tel" id="no_hp" placeholder="08xxxxxxxxxx" />
+    </div>
+
+    <button type="submit" id="btnDaftar" onclick="daftar()">Ambil Nomor Antrian</button>
+  </div>
+
+  <div class="link-admin"><a href="/admin">→ Masuk Halaman Admin</a></div>
+</div>
+
+<!-- Modal Tiket -->
+<div class="modal-overlay" id="modalTiket">
+  <div class="modal">
+    <div class="ikon">🎫</div>
+    <div class="teks-nomor">Nomor Antrian Kamu</div>
+    <div class="nomor-tiket" id="tiketNomor">—</div>
+    <hr/>
+    <div class="nama-tiket" id="tiketNama">—</div>
+    <div class="keperluan-tiket" id="tiketKeperluan">—</div>
+    <hr/>
+    <div class="pesan">Harap tunggu dan pantau layar antrian.<br>Jangan pergi terlalu jauh! 😊</div>
+    <br/>
+    <button class="btn-tutup" onclick="tutupModal()">OK, Mengerti</button>
+  </div>
+</div>
+
+<script>
+  // Refresh status antrian tiap 5 detik
+  function refreshStatus() {
+    fetch("/api/status")
+      .then(r => r.json())
+      .then(data => {
+        const n = data.sedang_dipanggil;
+        document.getElementById("nomorDipanggil").textContent = n.nomor ?? "—";
+        document.getElementById("namaDipanggil").textContent = n.nama ?? "Belum ada";
+        document.getElementById("infoMenunggu").textContent = `Menunggu: ${data.menunggu} orang`;
+      })
+      .catch(() => {});
+  }
+
+  refreshStatus();
+  setInterval(refreshStatus, 5000);
+
+  function daftar() {
+    const nama = document.getElementById("nama").value.trim();
+    const keperluan = document.getElementById("keperluan").value;
+    const no_hp = document.getElementById("no_hp").value.trim();
+
+    if (!nama) { alert("Nama tidak boleh kosong!"); return; }
+    if (!keperluan) { alert("Pilih keperluan terlebih dahulu!"); return; }
+
+    const btn = document.getElementById("btnDaftar");
+    btn.disabled = true;
+    btn.textContent = "Mendaftarkan...";
+
+    const formData = new FormData();
+    formData.append("nama", nama);
+    formData.append("keperluan", keperluan);
+    formData.append("no_hp", no_hp);
+
+    fetch("/daftar", { method: "POST", body: formData })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === "ok") {
+          document.getElementById("tiketNomor").textContent = data.nomor_antrian;
+          document.getElementById("tiketNama").textContent = data.nama;
+          document.getElementById("tiketKeperluan").textContent = data.keperluan;
+          document.getElementById("modalTiket").classList.add("aktif");
+
+          // Reset form
+          document.getElementById("nama").value = "";
+          document.getElementById("keperluan").value = "";
+          document.getElementById("no_hp").value = "";
+          refreshStatus();
+        } else {
+          alert("Gagal: " + data.pesan);
+        }
+      })
+      .catch(() => alert("Gagal terhubung ke server."))
+      .finally(() => {
+        btn.disabled = false;
+        btn.textContent = "Ambil Nomor Antrian";
+      });
+  }
+
+  function tutupModal() {
+    document.getElementById("modalTiket").classList.remove("aktif");
+  }
+</script>
+</body>
+</html>

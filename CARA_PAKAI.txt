@@ -1,0 +1,48 @@
+========================================
+  SISTEM ANTRIAN - CARA HOSTING DI RAILWAY
+========================================
+
+LANGKAH 1 — Upload ke GitHub
+   - Buat akun di github.com (gratis)
+   - Klik "New Repository"
+   - Upload semua file ini ke repo tersebut
+
+LANGKAH 2 — Deploy ke Railway
+   - Buka railway.app
+   - Login pakai akun GitHub
+   - Klik "New Project" → "Deploy from GitHub repo"
+   - Pilih repo kamu
+
+LANGKAH 3 — Tambah MySQL
+   - Di dashboard Railway, klik "+ New"
+   - Pilih "Database" → "MySQL"
+   - Railway otomatis konek ke project kamu
+
+LANGKAH 4 — Buat Tabel (SEKALI SAJA)
+   - Di Railway, klik project Flask kamu
+   - Buka tab "Settings" → "Railway Shell"
+   - Ketik: python setup_db.py
+
+LANGKAH 5 — Generate Domain
+   - Klik project Flask kamu
+   - Tab "Settings" → "Generate Domain"
+   - Kamu dapat URL gratis!
+
+========================================
+  HASIL AKHIR
+========================================
+   Form pendaftaran : https://namakamu.up.railway.app
+   Panel admin      : https://namakamu.up.railway.app/admin
+
+========================================
+  STRUKTUR FILE
+========================================
+antrian/
+├── app.py           ← Server utama (sudah siap Railway)
+├── setup_db.py      ← Buat tabel (jalankan sekali di Railway Shell)
+├── requirements.txt ← Daftar library (sudah include gunicorn)
+├── Procfile         ← Perintah start server untuk Railway
+├── CARA_PAKAI.txt   ← File ini
+└── templates/
+    ├── index.html   ← Halaman pendaftaran publik
+    └── admin.html   ← Panel admin
