@@ -1,102 +1,89 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-import mysql.connector
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime
+import mysql.connector
 import os
 
 app = Flask(__name__)
 
-# =============================================
-# KONFIGURASI DATABASE - RAILWAY ENV VARIABLE
-# =============================================
 def get_db():
     return mysql.connector.connect(
         host=os.environ.get("MYSQLHOST", "localhost"),
         user=os.environ.get("MYSQLUSER", "root"),
         password=os.environ.get("MYSQLPASSWORD", ""),
-        database=os.environ.get("MYSQLDATABASE", "db_antrian"),
+        database=os.environ.get("MYSQLDATABASE", "railway"),
         port=int(os.environ.get("MYSQLPORT", 3306)),
     )
 
-# =============================================
-# HALAMAN UTAMA - FORM PENDAFTARAN
-# =============================================
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# =============================================
-# PROSES PENDAFTARAN
-# =============================================
-@app.route("/daftar", methods=["POST"])
-def daftar():
-    nama = request.form.get("nama", "").strip()
-    keperluan = request.form.get("keperluan", "").strip()
-    no_hp = request.form.get("no_hp", "").strip()
-
-    if not nama or not keperluan:
-        return jsonify({"status": "error", "pesan": "Nama dan keperluan wajib diisi!"}), 400
-
-    try:
-        db = get_db()
-        cursor = db.cursor()
-
-        hari_ini = datetime.now().date()
-        cursor.execute(
-            "SELECT COUNT(*) FROM antrian WHERE DATE(waktu_daftar) = %s",
-            (hari_ini,)
-        )
-        jumlah = cursor.fetchone()[0]
-        nomor_antrian = jumlah + 1
-
-        cursor.execute(
-            """INSERT INTO antrian (nama, keperluan, no_hp, nomor_antrian, status, waktu_daftar)
-               VALUES (%s, %s, %s, %s, 'menunggu', NOW())""",
-            (nama, keperluan, no_hp, nomor_antrian)
-        )
-        db.commit()
-        id_baru = cursor.lastrowid
-        cursor.close()
-        db.close()
-
-        return jsonify({
-            "status": "ok",
-            "nomor_antrian": nomor_antrian,
-            "nama": nama,
-            "keperluan": keperluan,
-            "id": id_baru
-        })
-
-    except Exception as e:
-        return jsonify({"status": "error", "pesan": str(e)}), 500
-
-# =============================================
-# HALAMAN ADMIN
-# =============================================
 @app.route("/admin")
 def admin():
     return render_template("admin.html")
 
+@app.route("/laporan")
+def laporan():
+    return render_template("laporan.html")
+
 # =============================================
-# API: AMBIL DATA ANTRIAN
+# API: DAFTAR RESERVASI
 # =============================================
-@app.route("/api/antrian")
-def api_antrian():
+@app.route("/api/reservasi", methods=["POST"])
+def tambah_reservasi():
+    data = request.json
+    wajib = ["nama", "nik", "no_hp", "alamat", "tipe_kamar", "jumlah_tamu", "checkin", "checkout"]
+    for field in wajib:
+        if not data.get(field):
+            return jsonify({"status": "error", "pesan": f"{field} wajib diisi!"}), 400
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        checkin = datetime.strptime(data["checkin"], "%Y-%m-%d").date()
+        checkout = datetime.strptime(data["checkout"], "%Y-%m-%d").date()
+        lama_menginap = (checkout - checkin).days
+        if lama_menginap <= 0:
+            return jsonify({"status": "error", "pesan": "Tanggal checkout harus setelah checkin!"}), 400
+
+        harga_per_malam = {"standard": 300000, "deluxe": 500000, "suite": 900000, "villa": 1500000}
+        harga = harga_per_malam.get(data["tipe_kamar"], 300000)
+        total_harga = harga * lama_menginap
+
+        cursor.execute("""
+            INSERT INTO reservasi (nama, nik, no_hp, alamat, tipe_kamar, jumlah_tamu,
+            checkin, checkout, lama_menginap, harga_per_malam, total_harga,
+            metode_pembayaran, status_pembayaran, catatan, waktu_reservasi)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+        """, (
+            data["nama"], data["nik"], data["no_hp"], data["alamat"],
+            data["tipe_kamar"], data["jumlah_tamu"],
+            checkin, checkout, lama_menginap, harga, total_harga,
+            data.get("metode_pembayaran", "cash"),
+            data.get("status_pembayaran", "belum_bayar"),
+            data.get("catatan", "")
+        ))
+        db.commit()
+        id_baru = cursor.lastrowid
+        cursor.close()
+        db.close()
+        return jsonify({"status": "ok", "id": id_baru, "total_harga": total_harga, "lama_menginap": lama_menginap})
+    except Exception as e:
+        return jsonify({"status": "error", "pesan": str(e)}), 500
+
+# =============================================
+# API: AMBIL SEMUA RESERVASI
+# =============================================
+@app.route("/api/reservasi", methods=["GET"])
+def get_reservasi():
     try:
         db = get_db()
         cursor = db.cursor(dictionary=True)
-        hari_ini = datetime.now().date()
-        cursor.execute(
-            """SELECT * FROM antrian
-               WHERE DATE(waktu_daftar) = %s
-               ORDER BY nomor_antrian ASC""",
-            (hari_ini,)
-        )
+        cursor.execute("SELECT * FROM reservasi ORDER BY waktu_reservasi DESC")
         data = cursor.fetchall()
         for row in data:
-            if row.get("waktu_daftar"):
-                row["waktu_daftar"] = row["waktu_daftar"].strftime("%H:%M:%S")
-            if row.get("waktu_dipanggil"):
-                row["waktu_dipanggil"] = row["waktu_dipanggil"].strftime("%H:%M:%S")
+            for key in ["checkin", "checkout", "waktu_reservasi"]:
+                if row.get(key):
+                    row[key] = str(row[key])
         cursor.close()
         db.close()
         return jsonify(data)
@@ -104,56 +91,17 @@ def api_antrian():
         return jsonify({"error": str(e)}), 500
 
 # =============================================
-# API: PANGGIL ANTRIAN BERIKUTNYA
+# API: UPDATE STATUS
 # =============================================
-@app.route("/api/panggil", methods=["POST"])
-def panggil():
-    try:
-        db = get_db()
-        cursor = db.cursor(dictionary=True)
-        hari_ini = datetime.now().date()
-
-        cursor.execute(
-            """SELECT * FROM antrian
-               WHERE DATE(waktu_daftar) = %s AND status = 'menunggu'
-               ORDER BY nomor_antrian ASC LIMIT 1""",
-            (hari_ini,)
-        )
-        antrian = cursor.fetchone()
-
-        if not antrian:
-            cursor.close()
-            db.close()
-            return jsonify({"status": "kosong", "pesan": "Tidak ada antrian yang menunggu"})
-
-        cursor.execute(
-            "UPDATE antrian SET status='dipanggil', waktu_dipanggil=NOW() WHERE id=%s",
-            (antrian["id"],)
-        )
-        db.commit()
-        cursor.close()
-        db.close()
-
-        return jsonify({
-            "status": "ok",
-            "nomor_antrian": antrian["nomor_antrian"],
-            "nama": antrian["nama"],
-            "keperluan": antrian["keperluan"]
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# =============================================
-# API: SELESAIKAN ANTRIAN
-# =============================================
-@app.route("/api/selesai/<int:id>", methods=["POST"])
-def selesai(id):
+@app.route("/api/reservasi/<int:id>", methods=["PUT"])
+def update_reservasi(id):
+    data = request.json
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(
-            "UPDATE antrian SET status='selesai' WHERE id=%s", (id,)
-        )
+        cursor.execute("""
+            UPDATE reservasi SET status_pembayaran=%s, catatan=%s WHERE id=%s
+        """, (data.get("status_pembayaran"), data.get("catatan"), id))
         db.commit()
         cursor.close()
         db.close()
@@ -162,16 +110,14 @@ def selesai(id):
         return jsonify({"error": str(e)}), 500
 
 # =============================================
-# API: HAPUS / SKIP ANTRIAN
+# API: HAPUS RESERVASI
 # =============================================
-@app.route("/api/hapus/<int:id>", methods=["POST"])
-def hapus(id):
+@app.route("/api/reservasi/<int:id>", methods=["DELETE"])
+def hapus_reservasi(id):
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(
-            "UPDATE antrian SET status='dilewati' WHERE id=%s", (id,)
-        )
+        cursor.execute("DELETE FROM reservasi WHERE id=%s", (id,))
         db.commit()
         cursor.close()
         db.close()
@@ -180,36 +126,86 @@ def hapus(id):
         return jsonify({"error": str(e)}), 500
 
 # =============================================
-# API: STATUS ANTRIAN (untuk monitor publik)
+# API: LAPORAN STATISTIK
 # =============================================
-@app.route("/api/status")
-def status():
+@app.route("/api/laporan")
+def api_laporan():
     try:
         db = get_db()
         cursor = db.cursor(dictionary=True)
-        hari_ini = datetime.now().date()
 
-        cursor.execute(
-            "SELECT * FROM antrian WHERE DATE(waktu_daftar)=%s AND status='dipanggil' ORDER BY waktu_dipanggil DESC LIMIT 1",
-            (hari_ini,)
-        )
-        dipanggil = cursor.fetchone()
+        # Total & pendapatan
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_reservasi,
+                SUM(total_harga) as total_pendapatan,
+                AVG(total_harga) as rata_pendapatan,
+                MAX(total_harga) as transaksi_terbesar,
+                MIN(total_harga) as transaksi_terkecil,
+                SUM(lama_menginap) as total_malam,
+                AVG(lama_menginap) as rata_menginap,
+                AVG(jumlah_tamu) as rata_tamu
+            FROM reservasi
+        """)
+        ringkasan = cursor.fetchone()
 
-        cursor.execute(
-            "SELECT COUNT(*) as total FROM antrian WHERE DATE(waktu_daftar)=%s AND status='menunggu'",
-            (hari_ini,)
-        )
-        menunggu = cursor.fetchone()["total"]
+        # Per tipe kamar
+        cursor.execute("""
+            SELECT tipe_kamar,
+                COUNT(*) as jumlah,
+                SUM(total_harga) as pendapatan,
+                AVG(lama_menginap) as rata_menginap
+            FROM reservasi
+            GROUP BY tipe_kamar
+            ORDER BY pendapatan DESC
+        """)
+        per_kamar = cursor.fetchall()
+
+        # Per metode pembayaran
+        cursor.execute("""
+            SELECT metode_pembayaran,
+                COUNT(*) as jumlah,
+                SUM(total_harga) as total
+            FROM reservasi
+            GROUP BY metode_pembayaran
+        """)
+        per_metode = cursor.fetchall()
+
+        # Per status pembayaran
+        cursor.execute("""
+            SELECT status_pembayaran,
+                COUNT(*) as jumlah,
+                SUM(total_harga) as total
+            FROM reservasi
+            GROUP BY status_pembayaran
+        """)
+        per_status = cursor.fetchall()
+
+        # Pendapatan per bulan
+        cursor.execute("""
+            SELECT DATE_FORMAT(checkin, '%Y-%m') as bulan,
+                COUNT(*) as jumlah,
+                SUM(total_harga) as pendapatan
+            FROM reservasi
+            GROUP BY bulan
+            ORDER BY bulan DESC
+            LIMIT 12
+        """)
+        per_bulan = cursor.fetchall()
 
         cursor.close()
         db.close()
 
+        for key, val in (ringkasan or {}).items():
+            if val is not None:
+                ringkasan[key] = float(val)
+
         return jsonify({
-            "sedang_dipanggil": {
-                "nomor": dipanggil["nomor_antrian"] if dipanggil else None,
-                "nama": dipanggil["nama"] if dipanggil else None,
-            },
-            "menunggu": menunggu
+            "ringkasan": ringkasan,
+            "per_kamar": per_kamar,
+            "per_metode": per_metode,
+            "per_status": per_status,
+            "per_bulan": per_bulan
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
