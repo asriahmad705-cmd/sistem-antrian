@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Laporan - Grand Nusantara</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--emas:#C9A84C;--hitam:#1A1A2E;--abu:#F7F5F0;--putih:#FFFFFF;--teks:#2C2C2C}
+  body{font-family:'Inter',sans-serif;background:var(--abu);color:var(--teks)}
+  header{background:var(--hitam);color:var(--putih);padding:18px 40px;display:flex;justify-content:space-between;align-items:center}
+  .logo{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--emas)}
+  nav a{color:#ccc;text-decoration:none;margin-left:20px;font-size:0.9rem}
+  nav a:hover{color:var(--emas)}
+  .container{max-width:1100px;margin:30px auto;padding:0 20px}
+  .grid-stat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+  .stat{background:var(--putih);border-radius:10px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border-top:3px solid var(--emas)}
+  .stat .label{font-size:0.73rem;color:#888;text-transform:uppercase;letter-spacing:1px}
+  .stat .nilai{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--hitam);margin-top:6px}
+  .stat .sub{font-size:0.78rem;color:#aaa;margin-top:4px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .card{background:var(--putih);border-radius:12px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+  .card h3{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--hitam);margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--emas)}
+  table{width:100%;border-collapse:collapse;font-size:0.85rem}
+  th{background:var(--hitam);color:#fff;padding:10px;text-align:left;font-size:0.78rem;text-transform:uppercase}
+  td{padding:10px;border-bottom:1px solid #F0EDE8}
+  tr:hover td{background:#FFF9ED}
+  .bar-container{margin-bottom:12px}
+  .bar-label{display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px}
+  .bar-track{background:#F0EDE8;border-radius:10px;height:10px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--emas),#A8843C);transition:width 0.8s ease}
+  .badge{padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600}
+  .badge.lunas{background:#E8F5E9;color:#2E7D32}
+  .badge.dp{background:#FFF3E0;color:#E65100}
+  .badge.belum{background:#FFEBEE;color:#C62828}
+  @media(max-width:768px){.grid-stat{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Grand Nusantara — Laporan</div>
+  <nav>
+    <a href="/">Form Reservasi</a>
+    <a href="/admin">Data Tamu</a>
+    <a href="/laporan">Laporan</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="grid-stat">
+    <div class="stat">
+      <div class="label">Total Reservasi</div>
+      <div class="nilai" id="sTotal">-</div>
+      <div class="sub">COUNT(*)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Total Pendapatan</div>
+      <div class="nilai" id="sPendapatan">-</div>
+      <div class="sub">SUM(total_harga)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Rata-rata Transaksi</div>
+      <div class="nilai" id="sRata">-</div>
+      <div class="sub">AVG(total_harga)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Transaksi Terbesar</div>
+      <div class="nilai" id="sMax">-</div>
+      <div class="sub">MAX(total_harga)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Transaksi Terkecil</div>
+      <div class="nilai" id="sMin">-</div>
+      <div class="sub">MIN(total_harga)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Total Malam</div>
+      <div class="nilai" id="sMalam">-</div>
+      <div class="sub">SUM(lama_menginap)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Rata-rata Menginap</div>
+      <div class="nilai" id="sRataMalam">-</div>
+      <div class="sub">AVG(lama_menginap)</div>
+    </div>
+    <div class="stat">
+      <div class="label">Rata-rata Tamu</div>
+      <div class="nilai" id="sRataTamu">-</div>
+      <div class="sub">AVG(jumlah_tamu)</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Per Tipe Kamar — GROUP BY tipe_kamar</h3>
+      <div id="barKamar"></div>
+    </div>
+    <div class="card">
+      <h3>Per Status Pembayaran — GROUP BY status</h3>
+      <table>
+        <thead><tr><th>Status</th><th>Jumlah</th><th>Total</th></tr></thead>
+        <tbody id="tabelStatus"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Per Metode Pembayaran — GROUP BY metode</h3>
+      <table>
+        <thead><tr><th>Metode</th><th>Jumlah</th><th>Total</th></tr></thead>
+        <tbody id="tabelMetode"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Pendapatan Per Bulan — GROUP BY bulan</h3>
+      <div id="barBulan"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function rp(val) { return "Rp " + parseFloat(val||0).toLocaleString("id"); }
+
+async function muatLaporan() {
+  const res = await fetch("/api/laporan");
+  const data = await res.json();
+  if (data.error) { alert("Error: " + data.error); return; }
+
+  const r = data.ringkasan || {};
+  document.getElementById("sTotal").textContent = r.total_reservasi || 0;
+  document.getElementById("sPendapatan").textContent = rp(r.total_pendapatan);
+  document.getElementById("sRata").textContent = rp(r.rata_pendapatan);
+  document.getElementById("sMax").textContent = rp(r.transaksi_terbesar);
+  document.getElementById("sMin").textContent = rp(r.transaksi_terkecil);
+  document.getElementById("sMalam").textContent = (r.total_malam||0) + " malam";
+  document.getElementById("sRataMalam").textContent = parseFloat(r.rata_menginap||0).toFixed(1) + " malam";
+  document.getElementById("sRataTamu").textContent = parseFloat(r.rata_tamu||0).toFixed(1) + " orang";
+
+  // Bar chart kamar
+  const maxKamar = Math.max(...(data.per_kamar||[]).map(k => k.pendapatan||0), 1);
+  document.getElementById("barKamar").innerHTML = (data.per_kamar||[]).map(k => `
+    <div class="bar-container">
+      <div class="bar-label">
+        <span><strong>${k.tipe_kamar}</strong> (${k.jumlah}x)</span>
+        <span>${rp(k.pendapatan)}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(k.pendapatan/maxKamar*100)}%"></div></div>
+    </div>
+  `).join("") || "<p style='color:#aaa;font-size:0.85rem'>Belum ada data</p>";
+
+  // Tabel status
+  document.getElementById("tabelStatus").innerHTML = (data.per_status||[]).map(s => `
+    <tr>
+      <td><span class="badge ${s.status_pembayaran==='lunas'?'lunas':s.status_pembayaran==='dp'?'dp':'belum'}">${s.status_pembayaran}</span></td>
+      <td>${s.jumlah}</td>
+      <td>${rp(s.total)}</td>
+    </tr>
+  `).join("") || "<tr><td colspan='3' style='color:#aaa'>Belum ada data</td></tr>";
+
+  // Tabel metode
+  document.getElementById("tabelMetode").innerHTML = (data.per_metode||[]).map(m => `
+    <tr><td>${m.metode_pembayaran}</td><td>${m.jumlah}</td><td>${rp(m.total)}</td></tr>
+  `).join("") || "<tr><td colspan='3' style='color:#aaa'>Belum ada data</td></tr>";
+
+  // Bar chart bulan
+  const maxBulan = Math.max(...(data.per_bulan||[]).map(b => b.pendapatan||0), 1);
+  document.getElementById("barBulan").innerHTML = (data.per_bulan||[]).map(b => `
+    <div class="bar-container">
+      <div class="bar-label">
+        <span><strong>${b.bulan}</strong> (${b.jumlah}x)</span>
+        <span>${rp(b.pendapatan)}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(b.pendapatan/maxBulan*100)}%"></div></div>
+    </div>
+  `).join("") || "<p style='color:#aaa;font-size:0.85rem'>Belum ada data</p>";
+}
+
+muatLaporan();
+</script>
+</body>
+</html>
