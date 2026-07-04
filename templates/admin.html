@@ -1,326 +1,247 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Antrian</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f4ff;
-      min-height: 100vh;
-    }
-
-    header {
-      background: #1e3a8a;
-      color: white;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    header h1 { font-size: 1.2rem; }
-    header a { color: #93c5fd; font-size: 0.85rem; text-decoration: none; }
-
-    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
-
-    /* Kartu statistik */
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-    .stat-card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    }
-    .stat-card .angka { font-size: 2rem; font-weight: 800; }
-    .stat-card .keterangan { font-size: 0.75rem; color: #6b7280; margin-top: 2px; }
-    .stat-card.menunggu .angka { color: #f59e0b; }
-    .stat-card.dipanggil .angka { color: #3b82f6; }
-    .stat-card.selesai .angka { color: #10b981; }
-    .stat-card.total .angka { color: #1e3a8a; }
-
-    /* Tombol panggil */
-    .panel-panggil {
-      background: white;
-      border-radius: 14px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .info-dipanggil { flex: 1; }
-    .info-dipanggil .label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
-    .info-dipanggil .current { font-size: 2.2rem; font-weight: 900; color: #1e40af; }
-    .info-dipanggil .nama-current { font-size: 0.95rem; color: #374151; }
-
-    #btnPanggil {
-      padding: 14px 28px;
-      background: #1e40af;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    #btnPanggil:hover { background: #1e3a8a; }
-    #btnPanggil:disabled { background: #93c5fd; cursor: not-allowed; }
-
-    /* Tabel antrian */
-    .tabel-wrap {
-      background: white;
-      border-radius: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-      overflow: hidden;
-    }
-    .tabel-head {
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .tabel-head h2 { font-size: 1rem; color: #111827; }
-    .btn-refresh {
-      padding: 6px 14px;
-      background: #f3f4f6;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      cursor: pointer;
-      color: #374151;
-    }
-    .btn-refresh:hover { background: #e5e7eb; }
-
-    table { width: 100%; border-collapse: collapse; }
-    th {
-      background: #f9fafb;
-      text-align: left;
-      padding: 10px 16px;
-      font-size: 0.78rem;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    td { padding: 12px 16px; border-bottom: 1px solid #f9fafb; font-size: 0.88rem; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fafbff; }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 99px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .badge-menunggu { background: #fef3c7; color: #92400e; }
-    .badge-dipanggil { background: #dbeafe; color: #1e40af; }
-    .badge-selesai { background: #d1fae5; color: #065f46; }
-    .badge-dilewati { background: #f3f4f6; color: #6b7280; }
-
-    .aksi-btn {
-      padding: 5px 12px;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      font-weight: 600;
-      margin-right: 4px;
-    }
-    .btn-selesai { background: #d1fae5; color: #065f46; }
-    .btn-selesai:hover { background: #a7f3d0; }
-    .btn-skip { background: #f3f4f6; color: #6b7280; }
-    .btn-skip:hover { background: #e5e7eb; }
-
-    .no-data { text-align: center; color: #9ca3af; padding: 40px; font-size: 0.9rem; }
-
-    @media (max-width: 600px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .panel-panggil { flex-direction: column; align-items: stretch; text-align: center; }
-      #btnPanggil { width: 100%; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Grand Nusantara</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--emas:#C9A84C;--hitam:#1A1A2E;--abu:#F7F5F0;--putih:#FFFFFF;--teks:#2C2C2C}
+  body{font-family:'Inter',sans-serif;background:var(--abu);color:var(--teks)}
+  header{background:var(--hitam);color:var(--putih);padding:18px 40px;display:flex;justify-content:space-between;align-items:center}
+  .logo{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--emas)}
+  nav a{color:#ccc;text-decoration:none;margin-left:20px;font-size:0.9rem}
+  nav a:hover{color:var(--emas)}
+  .container{max-width:1200px;margin:30px auto;padding:0 20px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--putih);border-radius:10px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+  .stat-card .label{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:1px}
+  .stat-card .nilai{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--hitam);margin-top:6px}
+  .stat-card .nilai.emas{color:var(--emas)}
+  .card{background:var(--putih);border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:20px}
+  .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .card-header h2{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--hitam)}
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap}
+  .filter-bar input,.filter-bar select{padding:8px 12px;border:1.5px solid #E0DDD8;border-radius:6px;font-size:0.85rem;font-family:'Inter',sans-serif}
+  table{width:100%;border-collapse:collapse;font-size:0.85rem}
+  th{background:var(--hitam);color:var(--putih);padding:12px 10px;text-align:left;font-weight:500;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px}
+  td{padding:12px 10px;border-bottom:1px solid #F0EDE8}
+  tr:hover td{background:#FFF9ED}
+  .badge{padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600}
+  .badge.lunas{background:#E8F5E9;color:#2E7D32}
+  .badge.dp{background:#FFF3E0;color:#E65100}
+  .badge.belum{background:#FFEBEE;color:#C62828}
+  .badge.standard{background:#E3F2FD;color:#1565C0}
+  .badge.deluxe{background:#F3E5F5;color:#6A1B9A}
+  .badge.suite{background:#FFF8E1;color:#F57F17}
+  .badge.villa{background:#E8F5E9;color:#1B5E20}
+  .btn-sm{padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-size:0.8rem;font-weight:600}
+  .btn-lunas{background:#E8F5E9;color:#2E7D32}
+  .btn-hapus{background:#FFEBEE;color:#C62828}
+  .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center}
+  .modal.aktif{display:flex}
+  .modal-box{background:var(--putih);border-radius:12px;padding:32px;width:90%;max-width:500px}
+  .modal-box h3{font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:20px;color:var(--hitam)}
+  .form-group{margin-bottom:14px}
+  .form-group label{display:block;font-size:0.8rem;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase}
+  .form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1.5px solid #E0DDD8;border-radius:7px;font-family:'Inter',sans-serif;font-size:0.9rem}
+  .modal-actions{display:flex;gap:10px;margin-top:16px}
+  .btn-primary{flex:1;padding:12px;background:linear-gradient(135deg,var(--emas),#A8843C);color:#fff;border:none;border-radius:7px;font-weight:600;cursor:pointer}
+  .btn-cancel{flex:1;padding:12px;background:#F0EDE8;color:#555;border:none;border-radius:7px;font-weight:600;cursor:pointer}
+  .empty{text-align:center;padding:40px;color:#aaa;font-size:0.9rem}
+  @media(max-width:768px){.stats{grid-template-columns:1fr 1fr}table{font-size:0.78rem}}
+</style>
 </head>
 <body>
-
 <header>
-  <h1>⚙️ Panel Admin — Antrian</h1>
-  <a href="/">← Ke Halaman Pendaftaran</a>
+  <div class="logo">Grand Nusantara — Admin</div>
+  <nav>
+    <a href="/">Form Reservasi</a>
+    <a href="/admin">Data Tamu</a>
+    <a href="/laporan">Laporan</a>
+  </nav>
 </header>
 
 <div class="container">
-
-  <!-- Statistik -->
   <div class="stats">
-    <div class="stat-card menunggu">
-      <div class="angka" id="stMenunggu">0</div>
-      <div class="keterangan">Menunggu</div>
+    <div class="stat-card">
+      <div class="label">Total Reservasi</div>
+      <div class="nilai" id="statTotal">-</div>
     </div>
-    <div class="stat-card dipanggil">
-      <div class="angka" id="stDipanggil">0</div>
-      <div class="keterangan">Dipanggil</div>
+    <div class="stat-card">
+      <div class="label">Total Pendapatan</div>
+      <div class="nilai emas" id="statPendapatan">-</div>
     </div>
-    <div class="stat-card selesai">
-      <div class="angka" id="stSelesai">0</div>
-      <div class="keterangan">Selesai</div>
+    <div class="stat-card">
+      <div class="label">Sudah Lunas</div>
+      <div class="nilai" id="statLunas">-</div>
     </div>
-    <div class="stat-card total">
-      <div class="angka" id="stTotal">0</div>
-      <div class="keterangan">Total Hari Ini</div>
+    <div class="stat-card">
+      <div class="label">Belum Bayar</div>
+      <div class="nilai" id="statBelum">-</div>
     </div>
   </div>
 
-  <!-- Panel panggil -->
-  <div class="panel-panggil">
-    <div class="info-dipanggil">
-      <div class="label">Sedang Dilayani</div>
-      <div class="current" id="currentNomor">—</div>
-      <div class="nama-current" id="currentNama">Belum ada yang dipanggil</div>
+  <div class="card">
+    <div class="card-header">
+      <h2>Data Reservasi</h2>
+      <div class="filter-bar">
+        <input type="text" id="cari" placeholder="Cari nama..." onkeyup="filterData()"/>
+        <select id="filterKamar" onchange="filterData()">
+          <option value="">Semua Kamar</option>
+          <option value="standard">Standard</option>
+          <option value="deluxe">Deluxe</option>
+          <option value="suite">Suite</option>
+          <option value="villa">Villa</option>
+        </select>
+        <select id="filterStatus" onchange="filterData()">
+          <option value="">Semua Status</option>
+          <option value="lunas">Lunas</option>
+          <option value="dp">DP</option>
+          <option value="belum_bayar">Belum Bayar</option>
+        </select>
+      </div>
     </div>
-    <button id="btnPanggil" onclick="panggilBerikutnya()">📢 Panggil Berikutnya</button>
-  </div>
-
-  <!-- Tabel antrian -->
-  <div class="tabel-wrap">
-    <div class="tabel-head">
-      <h2>📋 Daftar Antrian Hari Ini</h2>
-      <button class="btn-refresh" onclick="loadAntrian()">🔄 Refresh</button>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nama</th>
+            <th>NIK</th>
+            <th>No HP</th>
+            <th>Kamar</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
+            <th>Malam</th>
+            <th>Total</th>
+            <th>Metode</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tabelData">
+          <tr><td colspan="12" class="empty">Memuat data...</td></tr>
+        </tbody>
+      </table>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>No.</th>
-          <th>Nama</th>
-          <th>Keperluan</th>
-          <th>No. HP</th>
-          <th>Daftar</th>
-          <th>Status</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="tabelBody">
-        <tr><td colspan="7" class="no-data">Memuat data...</td></tr>
-      </tbody>
-    </table>
   </div>
+</div>
 
+<!-- Modal Edit -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>Update Status Reservasi</h3>
+    <input type="hidden" id="editId"/>
+    <div class="form-group">
+      <label>Status Pembayaran</label>
+      <select id="editStatus">
+        <option value="belum_bayar">Belum Bayar</option>
+        <option value="dp">DP</option>
+        <option value="lunas">Lunas</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Catatan</label>
+      <textarea id="editCatatan" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="tutupModal()">Batal</button>
+      <button class="btn-primary" onclick="simpanEdit()">Simpan</button>
+    </div>
+  </div>
 </div>
 
 <script>
-  let dataAntrian = [];
+let semuaData = [];
 
-  function loadAntrian() {
-    fetch("/api/antrian")
-      .then(r => r.json())
-      .then(data => {
-        dataAntrian = data;
-        renderTabel(data);
-        hitungStat(data);
-        updateCurrent(data);
-      })
-      .catch(() => {
-        document.getElementById("tabelBody").innerHTML =
-          '<tr><td colspan="7" class="no-data">Gagal memuat data. Pastikan server berjalan.</td></tr>';
-      });
-  }
+async function muatData() {
+  const res = await fetch("/api/reservasi");
+  semuaData = await res.json();
+  hitungStats();
+  renderTabel(semuaData);
+}
 
-  function renderTabel(data) {
-    const tbody = document.getElementById("tabelBody");
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="no-data">Belum ada pendaftar hari ini.</td></tr>';
-      return;
-    }
+function hitungStats() {
+  const total = semuaData.length;
+  const pendapatan = semuaData.reduce((s,r) => s + parseFloat(r.total_harga||0), 0);
+  const lunas = semuaData.filter(r => r.status_pembayaran === "lunas").length;
+  const belum = semuaData.filter(r => r.status_pembayaran === "belum_bayar").length;
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statPendapatan").textContent = "Rp " + pendapatan.toLocaleString("id");
+  document.getElementById("statLunas").textContent = lunas;
+  document.getElementById("statBelum").textContent = belum;
+}
 
-    tbody.innerHTML = data.map(row => {
-      const badgeClass = {
-        menunggu: "badge-menunggu",
-        dipanggil: "badge-dipanggil",
-        selesai: "badge-selesai",
-        dilewati: "badge-dilewati"
-      }[row.status] || "";
+function renderTabel(data) {
+  const tbody = document.getElementById("tabelData");
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="12" class="empty">Tidak ada data</td></tr>'; return; }
+  tbody.innerHTML = data.map((r,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${r.nama}</strong></td>
+      <td>${r.nik}</td>
+      <td>${r.no_hp}</td>
+      <td><span class="badge ${r.tipe_kamar}">${r.tipe_kamar}</span></td>
+      <td>${r.checkin}</td>
+      <td>${r.checkout}</td>
+      <td>${r.lama_menginap}x</td>
+      <td><strong>Rp ${parseFloat(r.total_harga).toLocaleString("id")}</strong></td>
+      <td>${r.metode_pembayaran}</td>
+      <td><span class="badge ${r.status_pembayaran === 'lunas' ? 'lunas' : r.status_pembayaran === 'dp' ? 'dp' : 'belum'}">${r.status_pembayaran}</span></td>
+      <td style="display:flex;gap:6px">
+        <button class="btn-sm btn-lunas" onclick="bukaModal(${r.id},'${r.status_pembayaran}','${r.catatan||''}')">Edit</button>
+        <button class="btn-sm btn-hapus" onclick="hapus(${r.id})">Hapus</button>
+      </td>
+    </tr>
+  `).join("");
+}
 
-      const bisa_aksi = row.status === "menunggu" || row.status === "dipanggil";
-      const aksi = bisa_aksi ? `
-        <button class="aksi-btn btn-selesai" onclick="tandaiSelesai(${row.id})">✓ Selesai</button>
-        <button class="aksi-btn btn-skip" onclick="lewati(${row.id})">Skip</button>
-      ` : "—";
+function filterData() {
+  const cari = document.getElementById("cari").value.toLowerCase();
+  const kamar = document.getElementById("filterKamar").value;
+  const status = document.getElementById("filterStatus").value;
+  const hasil = semuaData.filter(r =>
+    (!cari || r.nama.toLowerCase().includes(cari)) &&
+    (!kamar || r.tipe_kamar === kamar) &&
+    (!status || r.status_pembayaran === status)
+  );
+  renderTabel(hasil);
+}
 
-      return `
-        <tr>
-          <td><strong>${row.nomor_antrian}</strong></td>
-          <td>${row.nama}</td>
-          <td>${row.keperluan}</td>
-          <td>${row.no_hp || "—"}</td>
-          <td>${row.waktu_daftar || "—"}</td>
-          <td><span class="badge ${badgeClass}">${row.status}</span></td>
-          <td>${aksi}</td>
-        </tr>
-      `;
-    }).join("");
-  }
+function bukaModal(id, status, catatan) {
+  document.getElementById("editId").value = id;
+  document.getElementById("editStatus").value = status;
+  document.getElementById("editCatatan").value = catatan;
+  document.getElementById("modal").classList.add("aktif");
+}
 
-  function hitungStat(data) {
-    document.getElementById("stMenunggu").textContent  = data.filter(d => d.status === "menunggu").length;
-    document.getElementById("stDipanggil").textContent = data.filter(d => d.status === "dipanggil").length;
-    document.getElementById("stSelesai").textContent   = data.filter(d => d.status === "selesai").length;
-    document.getElementById("stTotal").textContent     = data.length;
-  }
+function tutupModal() {
+  document.getElementById("modal").classList.remove("aktif");
+}
 
-  function updateCurrent(data) {
-    const dipanggil = data.find(d => d.status === "dipanggil");
-    if (dipanggil) {
-      document.getElementById("currentNomor").textContent = dipanggil.nomor_antrian;
-      document.getElementById("currentNama").textContent = `${dipanggil.nama} — ${dipanggil.keperluan}`;
-    } else {
-      document.getElementById("currentNomor").textContent = "—";
-      document.getElementById("currentNama").textContent = "Belum ada yang dipanggil";
-    }
-  }
+async function simpanEdit() {
+  const id = document.getElementById("editId").value;
+  await fetch(`/api/reservasi/${id}`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      status_pembayaran: document.getElementById("editStatus").value,
+      catatan: document.getElementById("editCatatan").value
+    })
+  });
+  tutupModal();
+  muatData();
+}
 
-  function panggilBerikutnya() {
-    const btn = document.getElementById("btnPanggil");
-    btn.disabled = true;
+async function hapus(id) {
+  if (!confirm("Yakin hapus reservasi ini?")) return;
+  await fetch(`/api/reservasi/${id}`, {method: "DELETE"});
+  muatData();
+}
 
-    fetch("/api/panggil", { method: "POST" })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status === "ok") {
-          alert(`📢 Memanggil Nomor ${data.nomor_antrian} — ${data.nama}`);
-          loadAntrian();
-        } else {
-          alert("ℹ️ " + (data.pesan || "Tidak ada antrian menunggu."));
-        }
-      })
-      .catch(() => alert("Gagal terhubung ke server."))
-      .finally(() => { btn.disabled = false; });
-  }
-
-  function tandaiSelesai(id) {
-    if (!confirm("Tandai sebagai selesai?")) return;
-    fetch(`/api/selesai/${id}`, { method: "POST" })
-      .then(() => loadAntrian())
-      .catch(() => alert("Gagal."));
-  }
-
-  function lewati(id) {
-    if (!confirm("Lewati antrian ini?")) return;
-    fetch(`/api/hapus/${id}`, { method: "POST" })
-      .then(() => loadAntrian())
-      .catch(() => alert("Gagal."));
-  }
-
-  // Load awal + auto-refresh tiap 5 detik
-  loadAntrian();
-  setInterval(loadAntrian, 5000);
+muatData();
 </script>
 </body>
 </html>
